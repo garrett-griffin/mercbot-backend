@@ -1,7 +1,13 @@
-const { DataTypes } = require('sequelize');
+const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const User = sequelize.define('User', {
+class User extends Model {
+    static associate(models) {
+        // Define associations here, if any
+    }
+}
+
+User.init({
     username: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -12,7 +18,10 @@ const User = sequelize.define('User', {
         allowNull: false
     }
 }, {
+    sequelize,
+    modelName: 'User',
     tableName: 'Users',
+    timestamps: false // Add this line if you don't want Sequelize to manage createdAt and updatedAt timestamps
 });
 
 module.exports = User;
