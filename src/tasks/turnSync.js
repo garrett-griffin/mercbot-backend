@@ -1,5 +1,5 @@
 const { Season, Turn } = require('../models'); // Adjust the path if necessary
-const { Client, Turn: TurnAPI } = require('jmerc');
+const { Client, TurnsAPI: TurnsAPI } = require('jmerc');
 require('dotenv').config();
 
 const user = process.env.API_USER;
@@ -7,19 +7,32 @@ const token = process.env.API_TOKEN;
 
 const syncTurnData = async () => {
     const client = new Client(user, token);
-    const turnAPI = new TurnAPI(client);
 
     try {
-        const turnData = await turnAPI.get();
+        const turnData = await client.Turn.get();
         console.log("Turn Number: " + turnData.turn);
 
-        // Here you would update your database with the turn data
-        await Turn.create({
-            turnNumber: turnData.turn,
-            seasonId: 1 // Adjust accordingly
-        });
+        // Check if the turn already exists
+        let existingTurn = await Turn.findOne({ where: { turnNumber: turnData.turn } });
 
-        console.log('Turn data synced successfully.');
+        if (existingTurn) {
+            // If the turn exists but doesn't have month and year, update it
+            if (!existingTurn.month || !existingTurn.year) {
+                existingTurn.month = null; // This will trigger the hook to calculate month and year
+                existingTurn.year = null;  // This will trigger the hook to calculate month and year
+                await existingTurn.save();
+                console.log('Turn data updated successfully.');
+            } else {
+                console.log('Turn already exists with month and year.');
+            }
+        } else {
+            // Create a new turn if it doesn't exist
+            await Turn.create({
+                turnNumber: turnData.turn,
+                seasonId: 1 // Adjust accordingly
+            });
+            console.log('Turn data synced successfully.');
+        }
     } catch (error) {
         console.error('Error syncing turn data:', error.message);
     }

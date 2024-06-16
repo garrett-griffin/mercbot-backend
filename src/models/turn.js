@@ -7,6 +7,12 @@ class Turn extends Model {
     }
 }
 
+// Array to map turn numbers to months
+const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+];
+
 Turn.init({
     turnNumber: {
         type: DataTypes.INTEGER,
@@ -30,7 +36,16 @@ Turn.init({
 }, {
     sequelize,
     modelName: 'Turn',
-    timestamps: false
+    timestamps: false,
+    hooks: {
+        beforeSave: (turn, options) => {
+            const turnNumber = turn.turnNumber;
+            const monthIndex = (turnNumber - 1) % 12;
+            const year = Math.floor((turnNumber - 1) / 12) + 1;
+            turn.month = months[monthIndex];
+            turn.year = year;
+        }
+    }
 });
 
 module.exports = Turn;
