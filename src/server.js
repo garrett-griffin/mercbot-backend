@@ -17,7 +17,7 @@ app.use(passport.initialize());
 
 // Set up CORS to allow requests from your frontend
 app.use(cors({
-    origin: 'http://localhost:3001', // Replace with the URL of your frontend
+    origin: ['http://localhost:3001', 'http://localhost:5173'], // Replace with the URL of your frontend
     credentials: true,
 }));
 

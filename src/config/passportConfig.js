@@ -6,7 +6,10 @@ const bcrypt = require('bcrypt');
 const User = require('../models/user');
 
 passport.use(
-    new LocalStrategy(async (username, password, done) => {
+    new LocalStrategy(
+        {
+            usernameField: 'email', // Use "email" field as the username
+        },async (username, password, done) => {
         try {
             const user = await User.findOne({ where: { username } });
             if (!user) {
@@ -20,7 +23,7 @@ passport.use(
         } catch (err) {
             return done(err);
         }
-    })
+    }, )
 );
 
 passport.use(

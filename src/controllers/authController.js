@@ -5,8 +5,9 @@ const jwt = require('jsonwebtoken');
 const passport = require('passport');
 
 exports.register = async (req, res) => {
-    const { username, password } = req.body;
+    const { reg_email, reg_password } = req.body;
 
+    const username = reg_email;
     try {
         // Check if the user already exists
         const existingUser = await User.findOne({ where: { username } });
@@ -15,7 +16,7 @@ exports.register = async (req, res) => {
         }
 
         // Hash the password
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(reg_password, 10);
 
         // Create a new user
         const user = await User.create({ username, password: hashedPassword });
@@ -28,7 +29,7 @@ exports.register = async (req, res) => {
 exports.login = (req, res, next) => {
     passport.authenticate('local', { session: false }, (err, user, info) => {
         if (err || !user) {
-            return res.status(400).json({ error: 'Invalid username or password' });
+            return res.status(400).json({ error: 'Invalid email or password' });
         }
         const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
         res.json({ message: 'Login successful', token });
