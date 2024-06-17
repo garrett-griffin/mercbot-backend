@@ -1,6 +1,10 @@
 const express = require('express');
+const passport = require('passport');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
+const turnRoutes = require('./routes/turn');
+const gameAccountRoutes = require('./routes/gameAccount');
+require('./config/passportConfig');
 require('dotenv').config();
 const cron = require('node-cron');
 const syncTurnData = require('./tasks/turnSync'); // Adjust path if necessary
@@ -9,6 +13,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(passport.initialize());
 
 // Set up CORS to allow requests from your frontend
 app.use(cors({
@@ -17,6 +22,8 @@ app.use(cors({
 }));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/turn', turnRoutes);
+app.use('/api/gameAccount', gameAccountRoutes);
 
 app.listen(port, () => {
     console.log(`MercBot backend listening at http://localhost:${port}`);

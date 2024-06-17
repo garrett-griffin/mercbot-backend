@@ -5,6 +5,12 @@ class Season extends Model {
     static associate(models) {
         Season.hasMany(models.Turn, { foreignKey: 'seasonId' });
     }
+
+    static async getCurrentSeason() {
+        return await this.findOne({
+            order: [['seasonNumber', 'DESC']]
+        });
+    }
 }
 
 Season.init({

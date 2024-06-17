@@ -1,4 +1,4 @@
-const { Season, Turn } = require('../models'); // Adjust the path if necessary
+const { Season, Turn, Town } = require('../models'); // Adjust the path if necessary
 const { Client, TurnsAPI: TurnsAPI } = require('jmerc');
 require('dotenv').config();
 
@@ -7,6 +7,13 @@ const token = process.env.API_TOKEN;
 
 const syncTurnData = async () => {
     const client = new Client(user, token);
+
+    let currentSeason = await Season.getCurrentSeason();
+    if(!currentSeason) {
+        console.log("Error: No Existing Season");
+        return;
+    }
+
 
     try {
         const turnData = await client.Turn.get();
@@ -35,6 +42,26 @@ const syncTurnData = async () => {
         }
     } catch (error) {
         console.error('Error syncing turn data:', error.message);
+    }
+    try {
+        let townData = await client.getTowns();
+        for(let i = 0; i < townData.length; i++) {
+            let existingTown = await Turn.findOne({ where: { id: townData[i].id } });
+            let townDetail = await client.Towns.getTown(townData[i].id);
+            if(!existingTown) {
+                await Town.create({
+                    seasonId: currentSeason.id,
+                    id: townDetail.id,
+                    name: townDetail.name,
+                    locationX:  townDetail.location.x,
+                    locationY: townDetail.location.y,
+                    region: townDetail.region,
+                    capital: townDetail.capital
+                })
+            }
+        }
+    } catch(error) {
+        console.error('Error syncing town data:', error.message);
     }
 };
 
