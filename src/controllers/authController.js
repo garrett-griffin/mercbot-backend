@@ -12,14 +12,14 @@ exports.register = async (req, res) => {
         // Check if the user already exists
         const existingUser = await User.findOne({ where: { username } });
         if (existingUser) {
-            return res.status(400).json({ error: 'Username already taken' });
+            return res.status(400).json({ error: 'Account already exists.' });
         }
 
         // Hash the password
         const hashedPassword = await bcrypt.hash(reg_password, 10);
 
         // Create a new user
-        const user = await User.create({ username, password: hashedPassword });
+        const user = await User.create({ username, password: hashedPassword, email: username });
         res.status(201).json({ message: 'Registration successful', user });
     } catch (error) {
         res.status(500).json({ error: 'Registration failed. Try again: ' + error.message });
@@ -32,7 +32,7 @@ exports.login = (req, res, next) => {
             return res.status(400).json({ error: 'Invalid email or password' });
         }
         const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.json({ message: 'Login successful', token });
+        res.json({ message: 'Login successful', token, id: user.id, role: user.role, firstName: user.firstName, lastName: user.lastName, email: user.email, username: user.username });
     })(req, res, next);
 };
 
@@ -45,6 +45,7 @@ exports.updateUsername = async (req, res) => {
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         user.username = newUsername;
+        user.email = newUsername;
         await user.save();
         res.status(200).json({ message: 'Username updated successfully' });
     } catch (error) {
@@ -53,12 +54,18 @@ exports.updateUsername = async (req, res) => {
 };
 
 exports.updatePassword = async (req, res) => {
-    const { newPassword } = req.body;
+    const { currentPassword, newPassword } = req.body;
     const userId = req.user.id;
 
     try {
         const user = await User.findByPk(userId);
         if (!user) return res.status(404).json({ error: 'User not found' });
+
+        // Check if the current password is correct
+        const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isCurrentPasswordValid) {
+            return res.status(401).json({ error: 'Current password is incorrect' });
+        }
 
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(newPassword, salt);

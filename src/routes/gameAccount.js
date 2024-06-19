@@ -2,23 +2,33 @@
 const express = require('express');
 const router = express.Router();
 const { GameAccount } = require('../models');
+const { Season } = require('../models');
+const passport = require("passport");
+const User = require("../models/user");
 
 // Endpoint to create a game account
-router.post('/create', async (req, res) => {
+router.post('/create', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
-        const { apiUser, apiToken, seasonId, userId } = req.body;
-        const newGameAccount = await GameAccount.create({ apiUser, apiToken, seasonId, userId });
+        const { apiUser, apiToken } = req.body;
+        const userId = req.user.id;
+        const season = await Season.getCurrentSeason();
+
+        const user = await User.findByPk(userId);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+
+        const newGameAccount = await GameAccount.create({ apiUser, apiToken, seasonId: season.id, userId });
         res.status(201).json(newGameAccount);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to create game account' });
+        res.status(500).json({ error: 'Failed to create game account: '+err });
     }
 });
 
 // Endpoint to list game accounts for a user
-router.get('/user/:userId', async (req, res) => {
+router.get('/get', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
-        const { userId } = req.params;
-        const gameAccounts = await GameAccount.findAll({ where: { userId } });
+        const userId = req.user.id;
+        const gameAccounts = await GameAccount.findAll({ where: { userId }, order: [['apiUser', 'ASC']] });
         res.json(gameAccounts);
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch game accounts' });
@@ -26,7 +36,7 @@ router.get('/user/:userId', async (req, res) => {
 });
 
 // Endpoint to delete a game account
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
         const { id } = req.params;
         await GameAccount.destroy({ where: { id } });
