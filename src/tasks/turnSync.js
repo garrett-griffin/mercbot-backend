@@ -1,4 +1,4 @@
-const { Season, Turn, Town } = require('../models'); // Adjust the path if necessary
+const { Season, Turn, Town, Region } = require('../models'); // Adjust the path if necessary
 const { Client, TurnsAPI: TurnsAPI } = require('jmerc');
 require('dotenv').config();
 
@@ -20,7 +20,7 @@ const syncTurnData = async () => {
         console.log("Turn Number: " + turnData.turn);
 
         // Check if the turn already exists
-        let existingTurn = await Turn.findOne({ where: { turnNumber: turnData.turn } });
+        let existingTurn = await Turn.findOne({ where: { seasonId: currentSeason.id, turnNumber: turnData.turn } });
 
         if (existingTurn) {
             // If the turn exists but doesn't have month and year, update it
@@ -44,9 +44,26 @@ const syncTurnData = async () => {
         console.error('Error syncing turn data:', error.message);
     }
     try {
+        let regions = await client.getRegions();
+        for(let i = 0; i < regions.length; i++) {
+            let existingRegion = await Region.findOne({ where: { seasonId: currentSeason.id, id: regions[i].id } });
+            if(!existingRegion) {
+                await Region.create({
+                    seasonId: currentSeason.id,
+                    id: regions[i].id,
+                    name: regions[i].name,
+                    description:  regions[i].description
+                })
+            }
+        }
+    } catch(error) {
+        console.error('Error syncing town data:', error.message);
+    }
+
+    try {
         let townData = await client.getTowns();
         for(let i = 0; i < townData.length; i++) {
-            let existingTown = await Turn.findOne({ where: { id: townData[i].id } });
+            let existingTown = await Town.findOne({ where: { seasonId: currentSeason.id, id: townData[i].id } });
             let townDetail = await client.Towns.getTown(townData[i].id);
             if(!existingTown) {
                 await Town.create({
@@ -58,6 +75,11 @@ const syncTurnData = async () => {
                     region: townDetail.region,
                     capital: townDetail.capital
                 })
+            }
+            else {
+                if (!existingTown.regionId) {
+                    await existingTown.update({ regionId: existingTown.region });
+                }
             }
         }
     } catch(error) {

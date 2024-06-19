@@ -3,6 +3,7 @@ const sequelize = require('../config/database');
 
 class Town extends Model {
     static associate(models) {
+        Town.belongsTo(models.Region, { foreignKey: 'regionId' });
         Town.belongsTo(models.Season, { foreignKey: 'seasonId' });
         Town.hasMany(models.MarketItem, { foreignKey: 'townId' });
     }
@@ -25,6 +26,14 @@ Town.init({
     locationY: {
         type: DataTypes.FLOAT,
         allowNull: true
+    },
+    regionId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+            model: 'Region',
+            key: 'id'
+        }
     },
     region: {
         type: DataTypes.INTEGER,

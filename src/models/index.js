@@ -41,21 +41,32 @@ Object.keys(db).forEach(modelName => {
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
-// Sync the database and seed initial data
 const syncDatabase = async () => {
     try {
         await sequelize.sync({ force: true });
 
-        // Seed initial data for Season if it doesn't already exist
-        const [initialSeason, created] = await db.Season.findOrCreate({
-            where: { seasonNumber: 1 },
-            defaults: { startDate: null, endDate: null }
+        // Seed initial data for Site if it doesn't already exist
+        const [site, siteCreated] = await db.Site.findOrCreate({
+            where: { name: 'Mercatorio' },
+            defaults: { url: 'play.mercatorio.io' }
         });
 
-        if (created) {
+        // Seed initial data for Season if it doesn't already exist
+        const [initialSeason, seasonCreated] = await db.Season.findOrCreate({
+            where: { seasonNumber: 1 },
+            defaults: { startDate: null, endDate: null, siteId: site.id }
+        });
+
+        if (seasonCreated) {
             console.log('Initial season seeded.');
         } else {
-            console.log('Initial season already exists.');
+            // If the season already exists, update its siteId if it's blank
+            if (!initialSeason.siteId) {
+                await initialSeason.update({ siteId: site.id });
+                console.log('Initial season updated with siteId.');
+            } else {
+                console.log('Initial season already has siteId on it.');
+            }
         }
 
         console.log('Database synced and initial data seeded.');
